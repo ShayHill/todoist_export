@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "todoist-export"
-version = "0.0.1"
+version = "0.1.0"
 description = ""
 authors = ["Shay Hill <shay_public@hotmail.com>"]
 readme = "README.md"
@@ -20,7 +20,7 @@ types-lxml = "^2022.11.8"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.0.1"
+version = "0.1.0"
 tag_format = "$version"
 version_files = [
     "pyproject.toml:^version"
