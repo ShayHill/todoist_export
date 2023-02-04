@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 TEMPLATE: Path = TEMPLATES / "sptc.docx"
 
 
-def _fix_template(template: Path):
+def fix_template(template: Path):
     """Open and close template to join any broken runs.
 
     :param template: Path to template.docx file
@@ -144,7 +144,7 @@ class ItemInserter:
         elem_clone = self.clone(values_)
 
         target = parent or self.parent
-        if target:
+        if target is not None:
             target.insert(index, elem_clone)
         else:
             msg = "parent must be given if self._elem has no parent"
@@ -185,7 +185,6 @@ def write_wip(output_filename: Path | str, table: list[tuple[str, str, str]]):
     :param table: a list of tuples (section, project, task)
     :effect: writes a docx file to the current directory
     """
-    _fix_template(TEMPLATE)
     reader = docx2python(TEMPLATE).docx_reader
     root = reader.file_of_type("officeDocument").root_element
 

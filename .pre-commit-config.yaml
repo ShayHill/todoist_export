@@ -97,6 +97,7 @@ repos:
     - --disable=no-member
     - --disable=import-error
     - --disable=no-name-in-module
+    - --disable=too-few-public-methods
     - --load-plugins=pylint.extensions.docparams
     - --accept-no-param-doc=n
     - --accept-no-raise-doc=n
@@ -122,13 +123,15 @@ repos:
   # PTH108 os.unlink should be replaced by .unlink()
   #
   # D401 first line of docstring should be in imperative mood
+  # DTZ005 datetime.datetime.now() without tz argument
+  # ANN401 Dynamically typed expressions disallowed
   rev: 'v0.0.238'
   hooks:
     - id: ruff
       exclude: "tests"
       args:
       - --select=ALL
-      - --ignore=ANN101,ANN102,ANN201,ANN202,B905,COM812,D203,D213,I001,ISC003,N802,N806,PGH003,PLR0913,PTH108,D401
+      - --ignore=ANN101,ANN102,ANN201,ANN202,B905,COM812,D203,D213,I001,ISC003,N802,N806,PGH003,PLR0913,PTH108,D401,DTZ005,ANN401
       - --fix
 
 # reads pyproject.toml for additional config
