@@ -14,6 +14,7 @@ Sort these so identical section names are adjacent. Send to write_wip.
 """
 
 import datetime
+import sys
 
 from todoist_tree.headers import new_headers
 from todoist_tree.read_changes import Project, Section, Task, Todoist, read_changes
@@ -92,6 +93,7 @@ def _read_todoist() -> Todoist | None:
     """
     api_token = _get_api_token_or_command()
     headers = new_headers(api_token)
+    _ = sys.stdout.write("Reading Todoist data...\n")
     return read_changes(headers)
 
 
@@ -120,6 +122,7 @@ def _main():
     table_lines = _create_table(todoist)
     filename = f"todoist_{_get_timestamp()}.docx"
     write_wip(filename, table_lines)
+    _ = sys.stdout.write(f"{len(table_lines)} tasks exported to '{filename}'\n")
     _ = input("press Enter to close...")
 
 

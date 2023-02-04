@@ -5,6 +5,7 @@
 """
 
 import configparser
+import sys
 from pathlib import Path
 from typing import Callable
 
@@ -14,13 +15,13 @@ CONFIG_TEMPLATE = """
 # Enter comma-separated lists of sections and projects to include or exclude. By
 # default, every section and project will be included.
 #
-# -- If include_sections is blank, all sections will be included. If even one section
-# is listed, then include_sections becomes a whitelist and only the listed sections
-# will be included. The same rule applies for include_projects.
+# -- If section_whitelist is blank, all sections will be included. If even one section
+# is listed, then section_whitelist becomes a whitelist and only the listed sections
+# will be included. The same rule applies for project_whitelist.
 #
-# -- Exclude trumps include, so if a section or project is both included and
-# excluded, it will be excluded. There really isn't a good reason to have a whitelist
-# and a blacklist. Just use whatever is easier for you.
+# -- Blacklist trumps whitelist, so if a section or project is both whitelisted and
+# blacklisted, it will be excluded. There really isn't a good reason to have both a
+# whitelist and a blacklist. Just use whatever is easier for you.
 #
 # -- Any task without a section will be put in "no section" (all lowercase). See
 # example for how to exclude.
@@ -29,22 +30,25 @@ CONFIG_TEMPLATE = """
 # fine. Everything is case sensitive.
 #
 # -- example entries:
-# include_sections = Active, Postponed, Delegated, Put on Hold
-# exclude_sections = no section, Personal, Long Section Name With Multiple Spaces
+# section_whitelist = Active, Postponed, Delegated, Put on Hold
+# section_blacklist = no section, Personal, Long Section Name With Multiple Spaces
 
 [todoist.filter]
-include_sections =
-include_projects =
-exclude_sections =
-exclude_projects =
+section_whitelist =
+project_whitelist =
+section_blacklist =
+project_blacklist =
 """
 
 
 def create_config_file():
     """Create a config file template if one doesn't exist."""
-    if CONFIG_FILE.exists() and input().lower() != "y":
-        return
+    if CONFIG_FILE.exists():
+        do_overwrite = input(f"Config file '{CONFIG_FILE}' exists. Overwrite? (y/N) ")
+        if do_overwrite.lower() != "y":
+            return
     _ = CONFIG_FILE.write_text(CONFIG_TEMPLATE[1:])
+    _ = sys.stdout.write(f"Config file '{CONFIG_FILE}' created.\n")
 
 
 def _read_config() -> configparser.ConfigParser:
@@ -54,10 +58,10 @@ def _read_config() -> configparser.ConfigParser:
     """
     config = configparser.ConfigParser()
     config["todoist.filter"] = {
-        "include_sections": "",
-        "include_projects": "",
-        "exclude_sections": "",
-        "exclude_projects": "",
+        "section_whitelist": "",
+        "project_whitelist": "",
+        "section_blacklist": "",
+        "project_blacklist": "",
     }
     _ = config.read("todoist_export.ini")
     return config
@@ -78,10 +82,10 @@ def get_user_defined_filters() -> Callable[[tuple[str, str, str]], bool]:
     :return: A tuple of (section_include_filter, project_include_filter).
     """
     config = _read_config()
-    include_sections = _split(config["todoist.filter"]["include_sections"])
-    include_projects = _split(config["todoist.filter"]["include_projects"])
-    exclude_sections = _split(config["todoist.filter"]["exclude_sections"])
-    exclude_projects = _split(config["todoist.filter"]["exclude_projects"])
+    section_whitelist = _split(config["todoist.filter"]["section_whitelist"])
+    project_whitelist = _split(config["todoist.filter"]["project_whitelist"])
+    section_blacklist = _split(config["todoist.filter"]["section_blacklist"])
+    project_blacklist = _split(config["todoist.filter"]["project_blacklist"])
 
     def filter_table(table_line: tuple[str, str, str]) -> bool:
         """Return True if the task should be included in the export.
@@ -90,13 +94,13 @@ def get_user_defined_filters() -> Callable[[tuple[str, str, str]], bool]:
         :return: True if the task should be included in the export.
         """
         section, project, _ = table_line
-        if section in exclude_sections:
+        if section in section_blacklist:
             return False
-        if project in exclude_projects:
+        if project in project_blacklist:
             return False
-        if include_sections and section not in include_sections:
+        if section_whitelist and section not in section_whitelist:
             return False
-        if include_projects and project not in include_projects:
+        if project_whitelist and project not in project_whitelist:
             return False
         return True
 
