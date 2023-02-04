@@ -1,14 +1,22 @@
 """Pull tasks from todoist and create a table.
 
+Put tasks into a table with the following columns:
+[
+    (section name, project name, task content),
+    (section name, project name, task content),
+    (section name, project name, task content),
+]
+
+Sort these so identical section names are adjacent. Send to write_wip.
+
 :author: Shay Hill
 :created: 2023-02-03
 """
 
-
 import datetime
 
 from todoist_tree.headers import new_headers
-from todoist_tree.read_changes import Project, Section, Task, read_changes
+from todoist_tree.read_changes import Project, Section, Task, Todoist, read_changes
 
 from todoist_export.parse_config import create_config_file, get_user_defined_filters
 from todoist_export.write_export import write_wip
@@ -44,7 +52,7 @@ def _get_timestamp() -> str:
 
 
 def _create_table_line(
-    task: Task, sections: dict[str, str], projects: dict[str, str]
+    task: Task, id2section: dict[str, str], id2project: dict[str, str]
 ) -> tuple[str, str, str]:
     """Create a line for the table.
 
@@ -56,16 +64,17 @@ def _create_table_line(
     You should never have a "no project" in the table, but it's possible according to
     the API. Will handle it gracefully just in case.
     """
-    section_name = sections.get(str(task.section_id), "no section")
-    project_name = projects.get(str(task.project_id), "no project")
+    section_name = id2section.get(str(task.section_id), "no section")
+    project_name = id2project.get(str(task.project_id), "no project")
     return (section_name, project_name, task.content)
 
 
-def _get_api_token() -> str:
+def _get_api_token_or_command() -> str:
     """Ask user for Todoist API token.
 
     :return: Todoist API token
-    :effect: a secret entry, `config`, will create a template ini file.
+    :effect: a hidden command, `config`, will create a template ini file if entered
+        at the API-token prompt.
     """
     api_token: str | None = None
     while not api_token:
@@ -76,28 +85,43 @@ def _get_api_token() -> str:
     return api_token
 
 
-def _create_table():
-    # ask user for api token
-    api_token = _get_api_token()
-    do_include_section, do_include_project = get_user_defined_filters()
+def _read_todoist() -> Todoist | None:
+    """Get an api_token from the user and read the Todoist data.
 
+    :return: Todoist api result wrapped in a Todoist object or None if failed.
+    """
+    api_token = _get_api_token_or_command()
     headers = new_headers(api_token)
-    todoist = read_changes(headers)
+    return read_changes(headers)
+
+
+def _create_table(todoist: Todoist) -> list[tuple[str, str, str]]:
+    """Create the table.
+
+    :return: list of tuples of section name, project name, task content
+    """
+    filter_table = get_user_defined_filters()
+
+    id2section = _map_section_id_to_name(todoist.sections)
+    id2project = _map_project_id_to_name(todoist.projects)
+    tasks = todoist.tasks
+    table_lines = [_create_table_line(t, id2section, id2project) for t in tasks]
+    return sorted(filter(filter_table, table_lines))
+
+
+def _main():
+    """Main function.
+
+    :effect: write a docx file with the table of tasks
+    """
+    todoist = _read_todoist()
     if todoist is None:
         return
-    sections = _map_section_id_to_name(todoist.sections)
-    projects = _map_project_id_to_name(todoist.projects)
-    tasks = todoist.tasks
-    table_lines = [_create_table_line(task, sections, projects) for task in tasks]
-    table_lines = [x for x in table_lines if do_include_section(x[0])]
-    table_lines = [x for x in table_lines if do_include_project(x[1])]
-    table_lines.sort()
-
-    timestamp = _get_timestamp()
-    filename = f"todoist_{timestamp}.docx"
+    table_lines = _create_table(todoist)
+    filename = f"todoist_{_get_timestamp()}.docx"
     write_wip(filename, table_lines)
     _ = input("press Enter to close...")
 
 
 if __name__ == "__main__":
-    _create_table()
+    _main()

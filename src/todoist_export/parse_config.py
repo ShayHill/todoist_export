@@ -6,9 +6,7 @@
 
 import configparser
 from pathlib import Path
-from typing import Any, Callable, Literal
-
-Filter = Callable[[str], bool]
+from typing import Callable
 
 CONFIG_FILE = Path("todoist_export.ini")
 
@@ -28,9 +26,9 @@ CONFIG_TEMPLATE = """
 # example for how to exclude.
 #
 # -- Entries here do not need quotes. Blank spaces in section or project names are
-# fine.  Everything is case sensitive.
+# fine. Everything is case sensitive.
 #
-# example:
+# -- example entries:
 # include_sections = Active, Postponed, Delegated, Put on Hold
 # exclude_sections = no section, Personal, Long Section Name With Multiple Spaces
 
@@ -47,20 +45,6 @@ def create_config_file():
     if CONFIG_FILE.exists() and input().lower() != "y":
         return
     _ = CONFIG_FILE.write_text(CONFIG_TEMPLATE[1:])
-
-
-class Everything:
-    """A class that contains everything."""
-
-    def __contains__(self, _: Any) -> Literal[True]:
-        """Always returns True.
-
-        :param _: Anything.
-        :return: True.
-
-        This is used to make a "whitelist" of everything.
-        """
-        return True
 
 
 def _read_config() -> configparser.ConfigParser:
@@ -88,7 +72,7 @@ def _split(config_value: str) -> set[str]:
     return {y.strip() for y in config_value.split(",") if y.strip()}
 
 
-def get_user_defined_filters() -> tuple[Filter, Filter]:
+def get_user_defined_filters() -> Callable[[tuple[str, str, str]], bool]:
     """Create filters from the config file (or defaults).
 
     :return: A tuple of (section_include_filter, project_include_filter).
@@ -99,26 +83,21 @@ def get_user_defined_filters() -> tuple[Filter, Filter]:
     exclude_sections = _split(config["todoist.filter"]["exclude_sections"])
     exclude_projects = _split(config["todoist.filter"]["exclude_projects"])
 
-    everything = Everything()
+    def filter_table(table_line: tuple[str, str, str]) -> bool:
+        """Return True if the task should be included in the export.
 
-    def do_include_section(section: str) -> bool:
-        """Return True if the section should be included in the export.
-
-        :param section: The section to check.
-        :return: True if the section should be included in the export.
+        :param table_line: (section name, project name, task content) tuple.
+        :return: True if the task should be included in the export.
         """
-        if section in (include_sections or everything):
-            return section not in exclude_sections
-        return False
+        section, project, _ = table_line
+        if section in exclude_sections:
+            return False
+        if project in exclude_projects:
+            return False
+        if include_sections and section not in include_sections:
+            return False
+        if include_projects and project not in include_projects:
+            return False
+        return True
 
-    def do_include_project(project: str) -> bool:
-        """Return True if the project should be included in the export.
-
-        :param project: The project to check.
-        :return: True if the project should be included in the export.
-        """
-        if project in (include_projects or everything):
-            return project not in exclude_projects
-        return False
-
-    return do_include_section, do_include_project
+    return filter_table
