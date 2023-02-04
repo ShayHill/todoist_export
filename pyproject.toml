@@ -9,11 +9,14 @@ packages = [{include = "todoist_export", from = "src"}]
 [tool.poetry.dependencies]
 python = "^3.10"
 todoist-tree = "^0.1.1"
+pytest = "^7.2.1"
+docx2python = "^2.5.0"
 
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^2.40.0"
-pre-commit = "^3.0.4"
+pre-commit = "^2.15.0"
+types-lxml = "^2022.11.8"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
