@@ -43,3 +43,5 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 ## To Create an EXE
 
 `pyinstaller src\todoist_export\main.py --upx-dir . --onefile`
+
+This will require pyinstaller in your environment and a [upx executable](https://github.com/upx/upx/releases/tag/v4.0.2) in the root directory.

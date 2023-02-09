@@ -191,6 +191,7 @@ def write_wip(output_filename: Path | str, table: list[tuple[str, str, str]]):
     section_elem = _find_text(root, "$SECTION$", Tags.PARAGRAPH)
     project_elem = _find_text(root, "$PROJECT$", Tags.PARAGRAPH)
     task_elem = _find_text(root, "$TASK$", Tags.PARAGRAPH)
+    # comment_elem = _find_text(root, "$COMMENT$", Tags.PARAGRAPH)
 
     add_section = ItemInserter(section_elem, ["$SECTION$"])
     add_project = ItemInserter(project_elem, ["$PROJECT$"])

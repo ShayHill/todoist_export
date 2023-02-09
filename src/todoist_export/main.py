@@ -118,7 +118,10 @@ def _main():
     """
     todoist = _read_todoist()
     if todoist is None:
+        _ = sys.stdout.write("Failed to read Todoist data.\n")
+        _ = input("press Enter to close...")
         return
+
     table_lines = _create_table(todoist)
     filename = f"todoist_{_get_timestamp()}.docx"
     write_wip(filename, table_lines)
