@@ -16,7 +16,7 @@ When you double click the executable file, a terminal window will open and ask y
 
 By default, the script will create an outline of *all* tasks as a Microsoft Word document named `todoist_[timestamp]`.
 
-There is a "secret" command you can enter at the API-token prompt: "config". If you enter "config" at the API-token prompt, the program will create a template config file, `todoist_export.ini` with instructions. You can use this file to whitelist or blacklist section and project names.
+There is a "secret" command you can enter at the API-token prompt: "config". If you enter "config" at the API-token prompt, the program will create a template config file, `todoist_export.ini` with instructions. Right click and open this file with Notepad. You can use this file to whitelist or blacklist section and project names.
 
 ## Where is my API Token?
 
