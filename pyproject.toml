@@ -8,7 +8,7 @@ packages = [{include = "todoist_export", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-todoist-tree = "^0.2.0"
+todoist-tree = "^0.4.0"
 pytest = "^7.2.1"
 docx2python = "^2.5.0"
 configparser = "^5.3.0"

@@ -210,3 +210,6 @@ def write_wip(output_filename: Path | str, table: list[tuple[str, str, str]]):
         _ = add_task([task])
 
     reader.save(output_filename)
+
+if __name__ == "__main__":
+    write_wip("test.docx", [("Section", "Project", "Task")])

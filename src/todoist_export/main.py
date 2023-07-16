@@ -15,6 +15,7 @@ Sort these so identical section names are adjacent. Send to write_wip.
 
 import datetime
 import sys
+import os
 
 from todoist_tree.headers import new_headers
 from todoist_tree.read_changes import Project, Section, Task, Todoist, read_changes
@@ -22,8 +23,16 @@ from todoist_tree.read_changes import Project, Section, Task, Todoist, read_chan
 from todoist_export.parse_config import create_config_file, get_user_defined_filters
 from todoist_export.write_export import write_wip
 
+from contextlib import suppress
+
 HIDDEN_COMMAND = "config"
 
+def _get_api_key() -> str:
+    """Look for an environment variable for a Todoist API key. If that fails, ask user.
+    """
+    with suppress(KeyError):
+        return os.environ["TODOIST_API_KEY"]
+    return input("Enter your Todoist API token: ")
 
 def _map_section_id_to_name(sections: list[Section]) -> dict[str, str]:
     """Create a dictionary of section id to section name.
@@ -79,7 +88,8 @@ def _get_api_token_or_command() -> str:
     """
     api_token: str | None = None
     while not api_token:
-        api_token = input("Enter your Todoist API token: ")
+        api_token = _get_api_key()
+        # TODO: remove the HIDDEN_COMMAND or find some way to enter it.
         if api_token == HIDDEN_COMMAND:
             create_config_file()
             api_token = None
@@ -96,6 +106,9 @@ def _read_todoist() -> Todoist | None:
     _ = sys.stdout.write("Reading Todoist data...\n")
     return read_changes(headers)
 
+def _get_today() -> str:
+    """Return today's date in YYYY-MM-DD format."""
+    return datetime.date.today().strftime("%Y-%m-%d")
 
 def _create_table(todoist: Todoist) -> list[tuple[str, str, str]]:
     """Create the table.
@@ -107,9 +120,9 @@ def _create_table(todoist: Todoist) -> list[tuple[str, str, str]]:
     id2section = _map_section_id_to_name(todoist.sections)
     id2project = _map_project_id_to_name(todoist.projects)
     tasks = todoist.tasks
-    table_lines = [_create_table_line(t, id2section, id2project) for t in tasks]
+    today = [x for x in tasks if x.due and x.due['date'][:10] == _get_today()]
+    table_lines = [_create_table_line(t, id2section, id2project) for t in today]
     return sorted(filter(filter_table, table_lines))
-
 
 def _main():
     """Main function.
@@ -123,7 +136,13 @@ def _main():
         return
 
     table_lines = _create_table(todoist)
+    with open("temp", "w", encoding="utf-8") as f:
+        for line in table_lines:
+            tab = "\t"
+            _ = f.write(f"{tab.join(line[-1:])}")
+            _ = f.write("\n")
     filename = f"todoist_{_get_timestamp()}.docx"
+    breakpoint()
     write_wip(filename, table_lines)
     _ = sys.stdout.write(f"{len(table_lines)} tasks exported to '{filename}'\n")
     _ = input("press Enter to close...")
