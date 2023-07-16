@@ -22,17 +22,37 @@ from todoist_tree.read_changes import Project, Section, Task, Todoist, read_chan
 
 from todoist_export.parse_config import create_config_file, get_user_defined_filters
 from todoist_export.write_export import write_wip
+import openai
+from paragraphs import par
 
 from contextlib import suppress
 
 HIDDEN_COMMAND = "config"
 
+AI_PROMPT = par(
+    """Estimate a time requirement for each task. Arrange the tasks in optimal
+    order.\n\n"""
+)
+
+openai.api_key = os.environ["OPENAI_API_KEY"]
+
+# chat_completion = openai.ChatCompletion.create(
+#     model="gpt-4-0613",
+#     messages=[
+#         {"role": "user", "content": "Give me a recipe for marshmallow tuna suprise."}
+#     ],
+# )
+
+# aaa = chat_completion.choices[0].message.content
+# breakpoint()
+
+
 def _get_api_key() -> str:
-    """Look for an environment variable for a Todoist API key. If that fails, ask user.
-    """
+    """Look for an environment variable for a Todoist API key. If that fails, ask user."""
     with suppress(KeyError):
         return os.environ["TODOIST_API_KEY"]
     return input("Enter your Todoist API token: ")
+
 
 def _map_section_id_to_name(sections: list[Section]) -> dict[str, str]:
     """Create a dictionary of section id to section name.
@@ -106,9 +126,11 @@ def _read_todoist() -> Todoist | None:
     _ = sys.stdout.write("Reading Todoist data...\n")
     return read_changes(headers)
 
+
 def _get_today() -> str:
     """Return today's date in YYYY-MM-DD format."""
     return datetime.date.today().strftime("%Y-%m-%d")
+
 
 def _create_table(todoist: Todoist) -> list[tuple[str, str, str]]:
     """Create the table.
@@ -120,9 +142,10 @@ def _create_table(todoist: Todoist) -> list[tuple[str, str, str]]:
     id2section = _map_section_id_to_name(todoist.sections)
     id2project = _map_project_id_to_name(todoist.projects)
     tasks = todoist.tasks
-    today = [x for x in tasks if x.due and x.due['date'][:10] == _get_today()]
+    today = [x for x in tasks if x.due and x.due["date"][:10] == _get_today()]
     table_lines = [_create_table_line(t, id2section, id2project) for t in today]
     return sorted(filter(filter_table, table_lines))
+
 
 def _main():
     """Main function.
@@ -136,15 +159,26 @@ def _main():
         return
 
     table_lines = _create_table(todoist)
+    tasks = [x[-1] for x in table_lines]
+
+    chat_completion = openai.ChatCompletion.create(
+        model="gpt-4-0613",
+        messages=[
+            {"role": "user", "content": AI_PROMPT + "\n".join(tasks) + "\n"},
+        ],
+    )
+    aaa = chat_completion.choices[0].message.content
+
     with open("temp", "w", encoding="utf-8") as f:
-        for line in table_lines:
-            tab = "\t"
-            _ = f.write(f"{tab.join(line[-1:])}")
-            _ = f.write("\n")
-    filename = f"todoist_{_get_timestamp()}.docx"
-    breakpoint()
-    write_wip(filename, table_lines)
-    _ = sys.stdout.write(f"{len(table_lines)} tasks exported to '{filename}'\n")
+        f.write(aaa)
+        # for line in table_lines:
+        #     tab = "\t"
+        #     _ = f.write(f"{tab.join(line[-1:])}")
+        #     _ = f.write("\n")
+    # filename = f"todoist_{_get_timestamp()}.docx"
+    # breakpoint()
+    # write_wip(filename, table_lines)
+    # _ = sys.stdout.write(f"{len(table_lines)} tasks exported to '{filename}'\n")
     _ = input("press Enter to close...")
 
 
